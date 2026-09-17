@@ -67,6 +67,47 @@ fallback.**
 Keep a commissioning baseline of your own — the raw known-good frames from a healthy pack are
 what you validate any future decoder change against.
 
+## Hardware — what you need to build this
+
+| part | notes |
+|---|---|
+| **Raspberry Pi Zero 2 W** | anything with USB and Bluetooth works; a Zero 2 W is ample for a 1 Hz job |
+| **Innomaker USB2CAN** (or any `gs_usb` adapter) | enumerates as `1d50:606f`, driver **`gs_usb`**, already in the Raspberry Pi OS kernel — no driver install. **Get the isolated version.** |
+| **micro-USB OTG adapter** | the Zero 2 W's data port is micro-USB and the adapter ends in USB-A. Without this it will not enumerate at all. |
+| RJ45 plug + a short length of cable | to make the DB9→RJ45 lead |
+| **2 × 120 Ω termination** | see below — both ends, not one |
+
+**Why isolated:** the CAN port on many GX units is *not* galvanically isolated (the original Cerbo GX
+is not; the MK2's VE.Can 1 is). An isolated adapter breaks any ground loop between the Pi's supply
+and the inverter, which matters more the closer this sits to transmitters or heavy DC.
+
+**The Pi's USB port must be a host.** If it has been used for USB-gadget serial, it is in peripheral
+mode and the adapter will not appear. Full instructions in [`deploy/`](deploy/) — briefly: comment
+out `dtoverlay=dwc2,dr_mode=peripheral`, stop `g_serial` loading, reboot. You know it worked when a
+root hub shows up in `lsusb` and `/sys/class/udc/` is gone.
+
+### Wiring, DB9 to RJ45
+
+    DB9 7  ->  RJ45 7   CAN-H        DB9 2  ->  RJ45 8   CAN-L        DB9 3  ->  RJ45 3   GND
+
+**That RJ45 pinout is Victron's.** Most other brands use pins **4/5** for CAN-H/L — check your
+inverter's manual. The DB9 side is standard CiA.
+
+**Terminate both ends.** A two-node CAN bus wants 120 Ω at each end: the jumper on the DB9 breakout,
+and a terminator in the spare jack of the same port pair on the GX (Victron ships them with VE.Can
+products). Measure across RJ45 pins 7–8 with nothing else connected — open means fit one, ~120 Ω
+means that port is already terminated and you should not add another.
+
+### Confirming the link before you trust it
+
+Send a few frames and check the **transmit error count**. CAN cannot transmit successfully unless
+another node acknowledges each frame, so `TX packets` climbing with `errors=0` proves the far end is
+listening. Swapped CAN-H/CAN-L gives errors and a rising fault count instead. `ERROR-ACTIVE` is the
+normal healthy state, not a fault.
+
+    ip -s link show can0        # TX packets rising, errors 0
+    ip -d link show can0        # state ERROR-ACTIVE, bitrate 500000
+
 ## The architecture, as built
 
     Epoch BMS --BLE (read-only)--> Pi Zero 2 W --USB--> can0 @500k
