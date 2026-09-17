@@ -1,0 +1,31 @@
+[Unit]
+Description=JBD BMS to Pylontech-CAN bridge (BLE -> CAN, read-only)
+Documentation=https://github.com/local/epoch-bms
+After=network-online.target bluetooth.service
+Wants=network-online.target bluetooth.service
+
+[Service]
+# can0 is the USB-CAN adapter; see deploy/90-can0.rules, which brings it up.
+Environment=BMS_CAN=can0
+Environment=BMS_MAC=AA:BB:CC:DD:EE:FF
+# Empty on purpose: the legacy USB-gadget serial responder stays switched off.
+Environment=BMS_SERIAL=
+Type=simple
+# Unprivileged on purpose: the dialout group and BlueZ's user access are enough,
+# and socketcan needs no privilege to send. Nothing here runs as root.
+User=YOUR_USER
+Group=dialout
+WorkingDirectory=/home/YOUR_USER/jbd-can-bridge
+ExecStart=/home/YOUR_USER/jbd-can-bridge/.venv/bin/python /home/YOUR_USER/jbd-can-bridge/bms-bridge.py
+Environment=BMS_POLL_INTERVAL=15
+Environment=BMS_MAX_SERVE_AGE=60
+Environment=BMS_METRICS_PORT=9101
+Restart=always
+RestartSec=10
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

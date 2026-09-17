@@ -1,0 +1,13 @@
+[Unit]
+Description=Virtual CAN interface for bms-bridge development
+Before=bms-bridge.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/sbin/modprobe vcan
+ExecStart=/bin/sh -c "ip link show vcan0 >/dev/null 2>&1 || ip link add dev vcan0 type vcan"
+ExecStart=/sbin/ip link set up vcan0
+
+[Install]
+WantedBy=multi-user.target

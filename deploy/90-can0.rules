@@ -1,0 +1,5 @@
+# Bring the USB-CAN adapter up automatically, at boot AND on replug.
+# Without this can0 exists but stays DOWN after a reboot, the CAN emitter
+# cannot open it, and the battery silently disappears from the Cerbo.
+# 500 kbit/s is fixed by the Victron CAN-bus BMS profile.
+SUBSYSTEM=="net", ACTION=="add", KERNEL=="can0", RUN+="/sbin/ip link set can0 up type can bitrate 500000"
