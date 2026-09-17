@@ -81,14 +81,8 @@ what you validate any future decoder change against.
 is not; the MK2's VE.Can 1 is). An isolated adapter breaks any ground loop between the Pi's supply
 and the inverter, which matters more the closer this sits to transmitters or heavy DC.
 
-**On a fresh Pi the USB port is already a host — plug in and go.** That is the default on
-Raspberry Pi OS; peripheral (gadget) mode only happens if someone has deliberately configured
-`dwc2` with a gadget module.
-
-*Only if this Pi has previously been used for USB-gadget serial* will the adapter fail to appear,
-because it is still in peripheral mode. Fix it as described in [`deploy/`](deploy/): comment out
-`dtoverlay=dwc2,dr_mode=peripheral`, stop `g_serial` loading, reboot. Either way, you can confirm
-host mode in a second — a root hub appears in `lsusb` and `/sys/class/udc/` is empty or absent.
+Plug the adapter into the Pi's **data** port (not PWR) and it should appear as `can0`. If it
+doesn't, see the troubleshooting note in [`deploy/`](deploy/).
 
 ### Wiring, DB9 to RJ45
 
